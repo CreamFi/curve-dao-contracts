@@ -49,7 +49,7 @@ def __init__(_receiver:address, _recovery: address, _owner: address, _emergency_
 @external
 def burn(_coin: address) -> bool:
     """
-    @notice Convert `_coin` by leaving Sushibar and get Sushi, then send it to receiver
+    @notice Convert `_coin` by withdrawing vvsp and get vsp, then send it to receiver
     @param _coin Address of the coin being converted
     @return bool success
     """
