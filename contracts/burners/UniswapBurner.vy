@@ -40,6 +40,74 @@ future_owner: public(address)
 future_emergency_owner: public(address)
 
 
+@internal
+def _swap_for_usdc(_coin:address, amount:uint256, router:address):
+    if _coin == WETH:
+        raw_call(
+            router,
+            concat(
+                method_id("swapExactTokensForTokens(uint256,uint256,address[],address,uint256)"),
+                convert(amount, bytes32),           # swap amount
+                EMPTY_BYTES32,                      # min expected
+                convert(160, bytes32),              # offset pointer to path array
+                convert(self.receiver, bytes32),    # receiver of the swap
+                convert(block.timestamp, bytes32),  # swap deadline
+                convert(2, bytes32),                # path length
+                convert(_coin, bytes32),            # input token
+                convert(USDC, bytes32),             # usdc (final output)
+            )
+        )
+    else:
+        raw_call(
+            router,
+            concat(
+                method_id("swapExactTokensForTokens(uint256,uint256,address[],address,uint256)"),
+                convert(amount, bytes32),           # swap amount
+                EMPTY_BYTES32,                      # min expected
+                convert(160, bytes32),              # offset pointer to path array
+                convert(self.receiver, bytes32),    # receiver of the swap
+                convert(block.timestamp, bytes32),  # swap deadline
+                convert(3, bytes32),                # path length
+                convert(_coin, bytes32),            # input token
+                convert(WETH, bytes32),             # weth (intermediate swap)
+                convert(USDC, bytes32),             # usdc (final output)
+            )
+        )
+
+@internal
+def _get_amounts_out(_coin:address, amount:uint256, router:address) -> uint256:
+    call_data: Bytes[256] = 0x00
+    if _coin == WETH:
+        call_data =  concat(
+                    method_id("getAmountsOut(uint256,address[])"),
+                    convert(amount, bytes32),
+                    convert(64, bytes32),
+                    convert(2, bytes32),
+                    convert(_coin, bytes32),
+                    convert(USDC, bytes32),
+                )
+    else:
+        call_data = concat(
+                method_id("getAmountsOut(uint256,address[])"),
+                convert(amount, bytes32),
+                convert(64, bytes32),
+                convert(3, bytes32),
+                convert(_coin, bytes32),
+                convert(WETH, bytes32),
+                convert(USDC, bytes32),
+            )
+    response: Bytes[128] = raw_call(
+            router,
+            call_data,
+            max_outsize=128
+        )
+    response_bytes_start_index: uint256 = 0
+    if _coin == WETH:
+        response_bytes_start_index = 64
+    else:
+        response_bytes_start_index = 96
+    return convert(slice(response, response_bytes_start_index, 32), uint256)
+
 @external
 def __init__(_receiver: address, _recovery: address, _owner: address, _emergency_owner: address):
     """
@@ -70,6 +138,7 @@ def burn(_coin: address) -> bool:
 
     # transfer coins from caller
     amount: uint256 = ERC20(_coin).balanceOf(msg.sender)
+
     if amount != 0:
         response: Bytes[32] = raw_call(
             _coin,
@@ -93,25 +162,12 @@ def burn(_coin: address) -> bool:
     # check the rates on uniswap and sushi to see which is the better option
     # vyper doesn't support dynamic arrays, so we build the calldata manually
     for addr in ROUTERS:
-        factory:address = UniswapV2Router02(addr).factory()
-        coin_weth_pair:address = UniswapV2Factory(factory).getPair(_coin, WETH)
-        if coin_weth_pair == ZERO_ADDRESS:
-            continue
-
-        response: Bytes[128] = raw_call(
-            addr,
-            concat(
-                method_id("getAmountsOut(uint256,address[])"),
-                convert(amount, bytes32),
-                convert(64, bytes32),
-                convert(3, bytes32),
-                convert(_coin, bytes32),
-                convert(WETH, bytes32),
-                convert(USDC, bytes32),
-            ),
-            max_outsize=128
-        )
-        expected: uint256 = convert(slice(response, 96, 32), uint256)
+        if _coin != WETH:
+            factory:address = UniswapV2Router02(addr).factory()
+            coin_weth_pair:address = UniswapV2Factory(factory).getPair(_coin, WETH)
+            if coin_weth_pair == ZERO_ADDRESS:
+                continue
+        expected:uint256 = self._get_amounts_out(_coin, amount, addr)
         if expected > best_expected:
             best_expected = expected
             router = addr
@@ -135,25 +191,10 @@ def burn(_coin: address) -> bool:
 
     # swap for USDC on whichever of uniswap/sushi gives a better rate
     # vyper doesn't support dynamic arrays, so we build the calldata manually
-    raw_call(
-        router,
-        concat(
-            method_id("swapExactTokensForTokens(uint256,uint256,address[],address,uint256)"),
-            convert(amount, bytes32),           # swap amount
-            EMPTY_BYTES32,                      # min expected
-            convert(160, bytes32),              # offset pointer to path array
-            convert(self.receiver, bytes32),    # receiver of the swap
-            convert(block.timestamp, bytes32),  # swap deadline
-            convert(3, bytes32),                # path length
-            convert(_coin, bytes32),            # input token
-            convert(WETH, bytes32),             # weth (intermediate swap)
-            convert(USDC, bytes32),             # usdc (final output)
-        )
-    )
-
+    self._swap_for_usdc(_coin, amount, router)
     return True
 
-
+        
 @external
 def recover_balance(_coin: address) -> bool:
     """

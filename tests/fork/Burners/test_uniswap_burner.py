@@ -10,6 +10,25 @@ def burner(UniswapBurner, alice, receiver):
 
 
 BBADGER = "0x19d97d8fa813ee2f51ad4b4e04ea08baf4dffc28"
+WETH = "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
+
+
+def test_burn_weth(MintableTestToken, USDC, alice, receiver, burner):
+    weth = MintableTestToken.from_abi("WETH", WETH, abi=ERC20)
+    amount = 10 ** weth.decimals()
+
+    weth._mint_for_testing(alice, amount, {"from": alice})
+    weth.approve(burner, 2 ** 256 - 1, {"from": alice})
+
+    burner.burn(weth, {"from": alice})
+
+    assert weth.balanceOf(alice) == 0
+    assert weth.balanceOf(burner) == 0
+    assert weth.balanceOf(receiver) == 0
+
+    assert USDC.balanceOf(alice) == 0
+    assert USDC.balanceOf(burner) == 0
+    assert USDC.balanceOf(receiver) > 0
 
 
 def test_burn(MintableTestToken, USDC, alice, receiver, burner):
