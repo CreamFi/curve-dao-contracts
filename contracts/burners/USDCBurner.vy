@@ -12,7 +12,10 @@ interface IB3CRVPool:
 
 interface YVaultIB3CRV:
     def deposit(_amount: uint256, recipient: address) -> uint256: nonpayable
-    
+
+interface FeeDistributor:
+    def checkpoint_token(): nonpayable
+    def checkpoint_total_supply(): nonpayable
 
 receiver: public(address)
 recovery: public(address)
@@ -72,6 +75,8 @@ def burn(_coin: address) -> bool:
         ib3_crv_amount:uint256 = IB3CRVPool(IB3CRV_POOL).add_liquidity(amounts, 0, True)
         ERC20(IB3CRV).approve(YVAULT_IB3CRV, ib3_crv_amount)
         yvault_ib3_crv_amount:uint256 = YVaultIB3CRV(YVAULT_IB3CRV).deposit(ib3_crv_amount, self.receiver)
+        FeeDistributor(receiver).checkpoint_token()
+        FeeDistributor(receiver).checkpoint_total_supply()
         log Burn(amount, yvault_ib3_crv_amount)
     return True
 
