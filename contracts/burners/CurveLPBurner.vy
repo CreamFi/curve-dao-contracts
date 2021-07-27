@@ -118,7 +118,18 @@ def add_swap_data(_coin:address) -> bool:
     ERC20(_coin).approve(stable_swap_address,  MAX_UINT256)
     
     return True
-
+@external
+def add_old_swap_data(_coin:address, _pool:address, _result_coin:address) -> bool:
+    """
+    @notice allow more Curve LP Token to be burned, this function is for old curve lp coin that has no minter function
+    @param _coin Curve LP token
+    @return bool success
+    """
+    assert msg.sender in [self.owner, self.emergency_owner]  # dev: only owner
+    self.burnable_coins[_coin].pool = _pool
+    self.burnable_coins[_coin].result_coin = _result_coin
+    ERC20(_coin).approve(_pool,  MAX_UINT256)
+    return True
 @external
 def recover_balance(_coin: address) -> bool:
     """

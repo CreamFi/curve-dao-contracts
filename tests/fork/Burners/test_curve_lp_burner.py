@@ -46,3 +46,28 @@ def test_burn_invalid_token(MintableTestToken, alice, burner, receiver):
     # revert when token is not added to burnable_tokens
     with brownie.reverts("token not burnable"):
         burner.burn(unapproved_token_address, {"from": alice})
+
+
+def test_burn_old_token(MintableTestToken, alice, burner, receiver):
+    token_address = "0xbbc81d23ea2c3ec7e56d39296f0cbb648873a5d3"  # yCRV
+    pool = "0xbbc81d23ea2c3ec7e56d39296f0cbb648873a5d3"
+    result_token_address = "0x6b175474e89094c44da98b954eedeac495271d0f"  # DAI
+
+    token = MintableTestToken.from_abi("test", token_address, abi=ERC20)
+    result_token = MintableTestToken.from_abi("result_test", result_token_address, abi=ERC20)
+    amount = 10 ** token.decimals()
+    token._mint_for_testing(alice, amount, {"from": alice})
+    assert token.balanceOf(alice) == amount
+    assert token.balanceOf(burner) == 0
+    assert token.balanceOf(receiver) == 0
+
+    burner.add_old_swap_data(token_address, pool, result_token_address)
+    burner.burn(token_address, {"from": alice})
+
+    assert token.balanceOf(alice) == 0
+    assert token.balanceOf(burner) == 0
+    assert token.balanceOf(receiver) == 0
+
+    assert result_token.balanceOf(alice) == 0
+    assert result_token.balanceOf(burner) == 0
+    assert result_token.balanceOf(receiver) > 0
