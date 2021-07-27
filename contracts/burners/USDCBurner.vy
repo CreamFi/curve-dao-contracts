@@ -75,8 +75,8 @@ def burn(_coin: address) -> bool:
         ib3_crv_amount:uint256 = IB3CRVPool(IB3CRV_POOL).add_liquidity(amounts, 0, True)
         ERC20(IB3CRV).approve(YVAULT_IB3CRV, ib3_crv_amount)
         yvault_ib3_crv_amount:uint256 = YVaultIB3CRV(YVAULT_IB3CRV).deposit(ib3_crv_amount, self.receiver)
-        FeeDistributor(receiver).checkpoint_token()
-        FeeDistributor(receiver).checkpoint_total_supply()
+        FeeDistributor(self.receiver).checkpoint_token()
+        FeeDistributor(self.receiver).checkpoint_total_supply()
         log Burn(amount, yvault_ib3_crv_amount)
     return True
 
