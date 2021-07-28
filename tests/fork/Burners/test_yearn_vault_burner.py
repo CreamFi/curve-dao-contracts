@@ -14,9 +14,15 @@ CrvSETH = "0xa3d87fffce63b53e0d54faa1cc983b7eb0b74a9c"
 YVCrvSTETH = "0xdCD90C7f6324cfa40d7169ef80b12031770B4325"
 CrvSTETH = "0x06325440d014e39736583c165c2963ba99faf14e"
 
-burnable_coins = {
-    YVCrvSETH: CrvSETH,
-    YVCrvSTETH: CrvSTETH,
+yWeth = "0xe1237aa7f535b0cc33fd973d66cbf830354d16c7"
+WETH = "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
+yUSD = "0x4B5BfD52124784745c1071dcB244C6688d2533d3"
+yCRV = "0xdF5e0e81Dff6FAF3A7e52BA697820c5e32D806A8"  # Curve.fi yDAI/yUSDC/yUSDT/yTUSD
+
+burnable_coins = {YVCrvSETH: CrvSETH, YVCrvSTETH: CrvSTETH, yUSD: yCRV}
+
+unburnable_coins = {
+    yWeth: WETH,
 }
 
 
@@ -44,27 +50,24 @@ def test_burn(MintableTestToken, alice, receiver, burner, token, result_token):
     assert result_token.balanceOf(receiver) > 0
 
 
-def test_burn_invalid_token(MintableTestToken, alice, burner, receiver):
-    unapproved_token_address = (
-        "0xBfedbcbe27171C418CDabC2477042554b1904857"  # yVault:Curve rETH Pool
-    )
-    result_token_address = "0x53a901d48795c58f485cbb38df08fa96a24669d5"  # Curve rEth LP
-    unapproved_token = MintableTestToken.from_abi("yVCRVrETH", unapproved_token_address, abi=ERC20)
-    result_token = MintableTestToken.from_abi("CRVrETH", result_token_address, abi=ERC20)
+@pytest.mark.parametrize("token,result_token", [(k, v) for k, v in unburnable_coins.items()])
+def test_burn_invalid_token(MintableTestToken, alice, burner, receiver, token, result_token):
+    unapproved_token = MintableTestToken.from_abi("test", token, abi=ERC20)
+    result_token = MintableTestToken.from_abi("CRVrETH", result_token, abi=ERC20)
     amount = 10 ** unapproved_token.decimals()
     unapproved_token._mint_for_testing(alice, amount, {"from": alice})
     # revert when token is not added to burnable_tokens
     with brownie.reverts("token not burnable"):
-        burner.burn(unapproved_token_address, {"from": alice})
+        burner.burn(token, {"from": alice})
 
     assert unapproved_token.balanceOf(alice) == amount
     assert unapproved_token.balanceOf(burner) == 0
     assert unapproved_token.balanceOf(receiver) == 0
 
     # add token to burnable_tokens and burn
-    burner.add_burnable_coin(unapproved_token_address, {"from": alice})
+    burner.add_burnable_coin(token, {"from": alice})
     unapproved_token.approve(burner, 2 ** 256 - 1, {"from": alice})
-    burner.burn(unapproved_token_address, {"from": alice})
+    burner.burn(token, {"from": alice})
 
     assert unapproved_token.balanceOf(alice) == 0
     assert unapproved_token.balanceOf(burner) == 0

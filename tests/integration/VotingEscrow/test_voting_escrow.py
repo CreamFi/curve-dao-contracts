@@ -1,5 +1,7 @@
-from tests.conftest import approx
 import brownie
+
+from tests.conftest import approx
+
 H = 3600
 DAY = 86400
 WEEK = 7 * DAY
@@ -255,6 +257,7 @@ def test_voting_powers(web3, chain, accounts, token, voting_escrow):
     w_alice = voting_escrow.balanceOfAt(alice, stages["bob_withdraw_2"][0])
     w_bob = voting_escrow.balanceOfAt(bob, stages["bob_withdraw_2"][0])
     assert w_total == w_alice == w_bob == 0
+
 
 def test_voting_escrow_is_not_active(web3, chain, accounts, token, voting_escrow):
     alice = accounts[0]

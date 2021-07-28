@@ -1,17 +1,9 @@
 import pytest
 from brownie import (
-    BTCBurner,
-    CBurner,
-    ETHBurner,
-    LPBurner,
-    MetaBurner,
-    UnderlyingBurner,
     UniswapBurner,
     UniswapLPBurner,
-    USDNBurner,
     VvspBurner,
     XSushiBurner,
-    YBurner,
     compile_source,
     convert,
 )
@@ -250,14 +242,6 @@ def vesting_simple(VestingEscrowSimple, accounts, vesting_factory, coin_a, start
 @pytest.fixture(
     scope="module",
     params=[
-        BTCBurner,
-        CBurner,
-        ETHBurner,
-        LPBurner,
-        MetaBurner,
-        UnderlyingBurner,
-        USDNBurner,
-        YBurner,
         UniswapLPBurner,
         XSushiBurner,
         VvspBurner,
