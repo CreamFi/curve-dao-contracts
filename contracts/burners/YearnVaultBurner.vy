@@ -42,10 +42,6 @@ def __init__(_receiver:address, _recovery: address, _owner: address, _emergency_
     self.recovery = _recovery
     self.owner = _owner
     self.emergency_owner = _emergency_owner
-    self.burnable_coins[0x986b4AFF588a109c09B50A03f42E4110E29D353F]=0xA3D87FffcE63B53E0d54fAa1cc983B7eB0b74A9c # Yearn Vault Curve: sETH -> withdraw and get Curve.fi ETH/sETH LP token
-    self.burnable_coins[0xdCD90C7f6324cfa40d7169ef80b12031770B4325]=0x06325440D014e39736583c165C2963BA99fAf14E # Yearn Vault Curve: stETH -> withdraw and get Curve.fi ETH/stETH LP token
-    # TODO: fix old coin
-    # self.burnable_coins[0x4B5BfD52124784745c1071dcB244C6688d2533d3]=0xdF5e0e81Dff6FAF3A7e52BA697820c5e32D806A8 # Yearn Vault Curve: yDAI/yUSDC/yUSDT/yTUSD
     
 
 
