@@ -173,7 +173,6 @@ def burn(_coin: address) -> bool:
             router = addr
 
     assert router != ZERO_ADDRESS, "neither Uniswap nor Sushiswap has liquidity pool for this token"
-
     # make sure the router is approved to transfer the coin
     if not self.is_approved[router][_coin]:
         response: Bytes[32] = raw_call(
@@ -188,7 +187,6 @@ def burn(_coin: address) -> bool:
         if len(response) != 0:
             assert convert(response, bool)
         self.is_approved[router][_coin] = True
-
     # swap for USDC on whichever of uniswap/sushi gives a better rate
     # vyper doesn't support dynamic arrays, so we build the calldata manually
     self._swap_for_usdc(_coin, amount, router)
