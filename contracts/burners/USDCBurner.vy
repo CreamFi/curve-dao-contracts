@@ -70,11 +70,14 @@ def burn(_coin: address) -> bool:
     amount = ERC20(_coin).balanceOf(self)
 
     if amount != 0:
+        # convert usdc to ib3crv
         ERC20(_coin).approve(IB3CRV_POOL, amount)
         amounts:uint256[3] = [0, amount, 0]
         ib3_crv_amount:uint256 = IB3CRVPool(IB3CRV_POOL).add_liquidity(amounts, 0, True)
+        # convert ib3crv to yvib3crv, then send to receiver
         ERC20(IB3CRV).approve(YVAULT_IB3CRV, ib3_crv_amount)
         yvault_ib3_crv_amount:uint256 = YVaultIB3CRV(YVAULT_IB3CRV).deposit(ib3_crv_amount, self.receiver)
+        # checkpoint fee distributor
         FeeDistributor(self.receiver).checkpoint_token()
         FeeDistributor(self.receiver).checkpoint_total_supply()
         log Burn(amount, yvault_ib3_crv_amount)

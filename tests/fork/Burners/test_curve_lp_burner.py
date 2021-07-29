@@ -56,7 +56,7 @@ def test_burn_invalid_token(MintableTestToken, alice, burner, receiver):
 
 
 def test_burn_old_token(MintableTestToken, alice, burner, receiver):
-    token_address = "0xbbc81d23ea2c3ec7e56d39296f0cbb648873a5d3"  # yCRV
+    token_address = "0xdf5e0e81dff6faf3a7e52ba697820c5e32d806a8"  # yCRV
     pool = "0xbbc81d23ea2c3ec7e56d39296f0cbb648873a5d3"
     result_token_address = "0x6b175474e89094c44da98b954eedeac495271d0f"  # DAI
 
@@ -69,6 +69,7 @@ def test_burn_old_token(MintableTestToken, alice, burner, receiver):
     assert token.balanceOf(receiver) == 0
 
     burner.add_old_swap_data(token_address, pool, result_token_address)
+    token.approve(burner, 2 ** 256 - 1, {"from": alice})
     burner.burn(token_address, {"from": alice})
 
     assert token.balanceOf(alice) == 0

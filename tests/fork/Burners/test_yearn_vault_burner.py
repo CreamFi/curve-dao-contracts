@@ -38,7 +38,7 @@ def test_burn(MintableTestToken, alice, receiver, burner, token, result_token):
     assert token.balanceOf(alice) == amount
     assert token.balanceOf(burner) == 0
     assert token.balanceOf(receiver) == 0
-
+    burner.add_burnable_coin(token.address)
     burner.burn(token, {"from": alice})
 
     assert token.balanceOf(alice) == 0
