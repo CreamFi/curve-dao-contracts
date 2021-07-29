@@ -6,6 +6,7 @@ env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   NODE_OPTIONS: --max_old_space_size=4096
   WEB3_INFURA_PROJECT_ID: ${{ secrets.WEB3_INFURA_PROJECT_ID }}
+  ETHPLORER_API_KEY: ${{ secrets.ETHPLORER_API_KEY }}
 
 
 
