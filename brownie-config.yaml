@@ -8,6 +8,7 @@ networks:
       accounts: 100
   mainnet-fork:
     cmd_settings:
+      fork: https://mainnet-eth.compound.finance@12988200
       unlock: 0xC447FcAF1dEf19A583F97b3620627BF69c05b5fB
 
 autofetch_sources: True
