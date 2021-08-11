@@ -2,8 +2,6 @@ import pytest
 from brownie_tokens import MintableForkToken
 
 from abi.ERC20 import ERC20
-from abi.USDT import USDT as USDT_abi
-from abi.WBTC import WBTC as WBTC_abi
 
 
 class _MintableTestToken(MintableForkToken):
@@ -52,14 +50,7 @@ def WETH():
 
 
 @pytest.fixture(scope="module")
-def USDT():
-    yield _MintableTestToken.from_abi(
-        "USDT", "0xdac17f958d2ee523a2206206994597c13d831ec7", abi=USDT_abi
-    )
-
-
-@pytest.fixture(scope="module")
 def DAI():
     yield _MintableTestToken.from_abi(
-        "DAI", "0x6B175474E89094C44Da98b954EedeAC495271d0F", abi=WBTC_abi
+        "DAI", "0x6B175474E89094C44Da98b954EedeAC495271d0F", abi=ERC20
     )
