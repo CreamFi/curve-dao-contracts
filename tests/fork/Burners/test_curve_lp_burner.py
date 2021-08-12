@@ -55,10 +55,22 @@ def test_burn_invalid_token(MintableTestToken, alice, burner, receiver):
         burner.burn(unapproved_token_address, {"from": alice})
 
 
-def test_burn_old_token(MintableTestToken, alice, burner, receiver):
-    token_address = "0xdf5e0e81dff6faf3a7e52ba697820c5e32d806a8"  # yCRV
-    pool = "0xbbc81d23ea2c3ec7e56d39296f0cbb648873a5d3"
-    result_token_address = "0x6b175474e89094c44da98b954eedeac495271d0f"  # DAI
+yCRV_address = "0xdf5e0e81dff6faf3a7e52ba697820c5e32d806a8"
+yCRV_pool = "0xbbc81d23ea2c3ec7e56d39296f0cbb648873a5d3"
+Crv3_address = "0x6c3F90f043a72FA612cbac8115EE7e52BDe6E490"
+Crv3_pool = "0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7"
+DAI = "0x6b175474e89094c44da98b954eedeac495271d0f"
+
+OLD_TOKENS = [
+    (yCRV_address, yCRV_pool, DAI),
+    (Crv3_address, Crv3_pool, DAI),
+]
+
+
+@pytest.mark.parametrize("token_address,pool_address,result_token_address", OLD_TOKENS)
+def test_burn_old_token(
+    MintableTestToken, alice, burner, receiver, token_address, pool_address, result_token_address
+):
 
     token = MintableTestToken.from_abi("test", token_address, abi=ERC20)
     result_token = MintableTestToken.from_abi("result_test", result_token_address, abi=ERC20)
@@ -68,7 +80,7 @@ def test_burn_old_token(MintableTestToken, alice, burner, receiver):
     assert token.balanceOf(burner) == 0
     assert token.balanceOf(receiver) == 0
 
-    burner.add_old_swap_data(token_address, pool, result_token_address)
+    burner.add_old_swap_data(token_address, pool_address, result_token_address)
     token.approve(burner, 2 ** 256 - 1, {"from": alice})
     burner.burn(token_address, {"from": alice})
 
