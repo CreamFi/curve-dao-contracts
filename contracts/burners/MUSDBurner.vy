@@ -1,4 +1,4 @@
-# @version 0.2.12
+# @version 0.2.15
 """
 @title MUSD Burner
 @notice Withdraw from MUSD and send USDC to receiver
@@ -7,8 +7,12 @@
 from vyper.interfaces import ERC20
 
 
-interface MUSD:
-    def redeem(_output:address, _mAssetQuantity:uint256, _minOutputQuantity:uint256, _recipient:address) -> (uint256): nonpayable
+interface Mstable:
+    def redeem(
+        _output: address, _mAssetQuantity: uint256, _minOutputQuantity: uint256, _recipient: address
+    ) -> (uint256):
+        nonpayable
+
 
 receiver: public(address)
 recovery: public(address)
@@ -17,17 +21,20 @@ is_killed: public(bool)
 emergency_owner: public(address)
 future_owner: public(address)
 future_emergency_owner: public(address)
-usdc: public(address)
-musd: public(address)
+
+
+USDC:constant(address) = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48
+MUSD:constant(address) = 0xe2f2a5C287993345a840Db3B0845fbC70f5935a5
 
 
 event Burn:
     lp_token: address
     amount: uint256
-    token0_amount:uint256
+    token0_amount: uint256
+
 
 @external
-def __init__(_receiver:address, _recovery: address, _owner: address, _emergency_owner: address):
+def __init__(_receiver: address, _recovery: address, _owner: address, _emergency_owner: address):
     """
     @notice Contract constructor
     @param _receiver the receiver address to which the resultant tokens will be sent
@@ -42,8 +49,6 @@ def __init__(_receiver:address, _recovery: address, _owner: address, _emergency_
     self.recovery = _recovery
     self.owner = _owner
     self.emergency_owner = _emergency_owner
-    self.usdc= 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48
-    self.musd = 0xe2f2a5C287993345a840Db3B0845fbC70f5935a5
 
 
 @external
@@ -54,8 +59,8 @@ def burn(_coin: address) -> bool:
     @return bool success
     """
     assert not self.is_killed  # dev: is killed
-    assert _coin == self.musd, "only allows burning musd"
-    
+    assert _coin == MUSD, "only allows burning musd"
+
     # transfer coins from caller
     amount: uint256 = ERC20(_coin).balanceOf(msg.sender)
     if amount != 0:
@@ -65,9 +70,10 @@ def burn(_coin: address) -> bool:
     amount = ERC20(_coin).balanceOf(self)
 
     if amount != 0:
-        usdc_amount: uint256 = MUSD(_coin).redeem(self.usdc, amount, 0, self.receiver)
+        usdc_amount: uint256 = Mstable(_coin).redeem(USDC, amount, 0, self.receiver)
         log Burn(_coin, amount, usdc_amount)
     return True
+
 
 @external
 def recover_balance(_coin: address) -> bool:
@@ -120,7 +126,6 @@ def set_killed(_is_killed: bool) -> bool:
     self.is_killed = _is_killed
 
     return True
-
 
 
 @external

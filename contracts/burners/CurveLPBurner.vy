@@ -1,20 +1,29 @@
-# @version 0.2.7
+# @version 0.2.15
 """
 @title Curve LP Burner
-@notice Converts Curve LP tokens to a single asset and forwards to the receiver
+@notice Convert Curve LP tokens to a single asset and send to the receiver
 """
 
 from vyper.interfaces import ERC20
 
+
 interface StableSwap:
-    def remove_liquidity_one_coin(_amount: uint256, i: int128, _min_amount: uint256): nonpayable
-    def coins(index:uint256) -> address:view
+    def remove_liquidity_one_coin(_amount: uint256, i: int128, _min_amount: uint256):
+        nonpayable
+
+    def coins(index: uint256) -> address:
+        view
+
 
 interface CurveLPToken:
-    def minter() -> address: view
+    def minter() -> address:
+        view
+
 
 interface WETH9:
-    def deposit(): payable
+    def deposit():
+        payable
+
 
 struct SwapData:
     pool: address
@@ -23,25 +32,23 @@ struct SwapData:
 
 recovery: public(address)
 is_killed: public(bool)
-
 receiver: public(address)
 owner: public(address)
 emergency_owner: public(address)
 future_owner: public(address)
 future_emergency_owner: public(address)
-burnable_coins:public(HashMap[address,SwapData])
+burnable_coins: public(HashMap[address, SwapData])
+
+
 ETH:constant(address) =  0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE
 WETH:constant(address) = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2
 
+
 @external
-def __init__(_receiver:address, _recovery: address, _owner: address, _emergency_owner: address):
+def __init__(_receiver: address, _recovery: address, _owner: address, _emergency_owner: address):
     """
     @notice Contract constructor
     @param _receiver the receiver address to which the resultant tokens will be sent
-    @dev Unlike other burners, this contract may transfer tokens to
-         multiple addresses after the swap. Receiver addresses are
-         set by calling `set_swap_data` instead of setting it
-         within the constructor.
     @param _recovery Address that tokens are transferred to during an
                      emergency token recovery.
     @param _owner Owner address. Can kill the contract, recover tokens
@@ -53,14 +60,12 @@ def __init__(_receiver:address, _recovery: address, _owner: address, _emergency_
     self.recovery = _recovery
     self.owner = _owner
     self.emergency_owner = _emergency_owner
-    
-
 
 
 @external
 def burn(_coin: address) -> bool:
     """
-    @notice Convert `_coin` by removing liquidity and transfer to another burner
+    @notice Convert `_coin` by removing liquidity and send to receiver
     @param _coin Address of the coin being converted
     @return bool success
     """
@@ -77,8 +82,8 @@ def burn(_coin: address) -> bool:
 
     if amount != 0:
         # remove liquidity and pass to the next burner
-        stable_swap_address:address = self.burnable_coins[_coin].pool
-        result_coin_address:address = self.burnable_coins[_coin].result_coin
+        stable_swap_address: address = self.burnable_coins[_coin].pool
+        result_coin_address: address = self.burnable_coins[_coin].result_coin
         StableSwap(stable_swap_address).remove_liquidity_one_coin(amount, 0, 0)
         # wrap eth into weth before sending it to receiver
         if result_coin_address == ETH:
@@ -101,35 +106,39 @@ def burn(_coin: address) -> bool:
 
     return True
 
+
 @external
-def add_swap_data(_coin:address) -> bool:
+def add_swap_data(_coin: address) -> bool:
     """
-    @notice allow more Curve LP Token to be burned
+    @notice allow more Curve LP Tokens to be burned
     @param _coin Curve LP token
     @return bool success
     """
     assert msg.sender in [self.owner, self.emergency_owner]  # dev: only owner
-    stable_swap_address:address = CurveLPToken(_coin).minter()
+    stable_swap_address: address = CurveLPToken(_coin).minter()
     assert stable_swap_address != ZERO_ADDRESS
     self.burnable_coins[_coin].pool = stable_swap_address
-    result_coin:address= StableSwap(stable_swap_address).coins(0)
+    result_coin: address = StableSwap(stable_swap_address).coins(0)
     assert result_coin != ZERO_ADDRESS
     self.burnable_coins[_coin].result_coin = result_coin
-    ERC20(_coin).approve(stable_swap_address,  MAX_UINT256)
-    
+    ERC20(_coin).approve(stable_swap_address, MAX_UINT256)
     return True
+
+
 @external
-def add_old_swap_data(_coin:address, _pool:address, _result_coin:address) -> bool:
+def add_old_swap_data(_coin: address, _pool: address, _result_coin: address) -> bool:
     """
-    @notice allow more Curve LP Token to be burned, this function is for old curve lp coin that has no minter function
+    @notice allow more Curve LP Tokens to be burned, this function is for old curve lp coin that has no minter function
     @param _coin Curve LP token
     @return bool success
     """
     assert msg.sender in [self.owner, self.emergency_owner]  # dev: only owner
     self.burnable_coins[_coin].pool = _pool
     self.burnable_coins[_coin].result_coin = _result_coin
-    ERC20(_coin).approve(_pool,  MAX_UINT256)
+    ERC20(_coin).approve(_pool, MAX_UINT256)
     return True
+
+
 @external
 def recover_balance(_coin: address) -> bool:
     """
@@ -183,7 +192,6 @@ def set_killed(_is_killed: bool) -> bool:
     return True
 
 
-
 @external
 def commit_transfer_ownership(_future_owner: address) -> bool:
     """
@@ -234,6 +242,7 @@ def accept_transfer_emergency_ownership() -> bool:
     self.emergency_owner = msg.sender
 
     return True
+
 
 @external
 @payable

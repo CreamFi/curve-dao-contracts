@@ -1,21 +1,31 @@
-# @version 0.2.12
+# @version 0.2.15
 """
 @title USDC Burner
-@notice Convert USDC into yVault.IB3CRV
+@notice Convert USDC into yVault.IB3CRV and send to receiver
 """
 
 from vyper.interfaces import ERC20
 
 
 interface IB3CRVPool:
-    def add_liquidity(_amounts: uint256[3],_min_mint_amount: uint256,_use_underlying: bool) -> uint256: nonpayable #USDC index = 1
+    def add_liquidity(
+        _amounts: uint256[3], _min_mint_amount: uint256, _use_underlying: bool
+    ) -> uint256:
+        nonpayable  # USDC index = 1
+
 
 interface YVaultIB3CRV:
-    def deposit(_amount: uint256, recipient: address) -> uint256: nonpayable
+    def deposit(_amount: uint256, recipient: address) -> uint256:
+        nonpayable
+
 
 interface FeeDistributor:
-    def checkpoint_token(): nonpayable
-    def checkpoint_total_supply(): nonpayable
+    def checkpoint_token():
+        nonpayable
+
+    def checkpoint_total_supply():
+        nonpayable
+
 
 receiver: public(address)
 recovery: public(address)
@@ -24,16 +34,21 @@ is_killed: public(bool)
 emergency_owner: public(address)
 future_owner: public(address)
 future_emergency_owner: public(address)
+
+
 USDC: constant(address) = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48
 IB3CRV_POOL: constant(address) = 0x2dded6Da1BF5DBdF597C45fcFaa3194e53EcfeAF
 YVAULT_IB3CRV: constant(address) = 0x27b7b1ad7288079A66d12350c828D3C00A6F07d7
 IB3CRV:constant(address) = 0x5282a4eF67D9C33135340fB3289cc1711c13638C
+
+
 event Burn:
     usdc_amount: uint256
     yvault_ib3_crv_amount: uint256
 
+
 @external
-def __init__(_receiver:address, _recovery: address, _owner: address, _emergency_owner: address):
+def __init__(_receiver: address, _recovery: address, _owner: address, _emergency_owner: address):
     """
     @notice Contract constructor
     @param _receiver the receiver address to which the resultant tokens will be sent, should be a FeeDistributor address
@@ -50,8 +65,8 @@ def __init__(_receiver:address, _recovery: address, _owner: address, _emergency_
     self.emergency_owner = _emergency_owner
 
 
-
 @external
+@nonreentrant("lock")
 def burn(_coin: address) -> bool:
     """
     @notice Convert `_coin` USDC into yVault.IB3CRV
@@ -60,7 +75,7 @@ def burn(_coin: address) -> bool:
     """
     assert not self.is_killed  # dev: is killed
     assert _coin == USDC
-    
+
     # transfer coins from caller
     amount: uint256 = ERC20(_coin).balanceOf(msg.sender)
     if amount != 0:
@@ -72,16 +87,19 @@ def burn(_coin: address) -> bool:
     if amount != 0:
         # convert usdc to ib3crv
         ERC20(_coin).approve(IB3CRV_POOL, amount)
-        amounts:uint256[3] = [0, amount, 0]
-        ib3_crv_amount:uint256 = IB3CRVPool(IB3CRV_POOL).add_liquidity(amounts, 0, True)
+        amounts: uint256[3] = [0, amount, 0]
+        ib3_crv_amount: uint256 = IB3CRVPool(IB3CRV_POOL).add_liquidity(amounts, 0, True)
         # convert ib3crv to yvib3crv, then send to receiver
         ERC20(IB3CRV).approve(YVAULT_IB3CRV, ib3_crv_amount)
-        yvault_ib3_crv_amount:uint256 = YVaultIB3CRV(YVAULT_IB3CRV).deposit(ib3_crv_amount, self.receiver)
+        yvault_ib3_crv_amount: uint256 = YVaultIB3CRV(YVAULT_IB3CRV).deposit(
+            ib3_crv_amount, self.receiver
+        )
         # checkpoint fee distributor
         FeeDistributor(self.receiver).checkpoint_token()
         FeeDistributor(self.receiver).checkpoint_total_supply()
         log Burn(amount, yvault_ib3_crv_amount)
     return True
+
 
 @external
 def recover_balance(_coin: address) -> bool:
@@ -134,7 +152,6 @@ def set_killed(_is_killed: bool) -> bool:
     self.is_killed = _is_killed
 
     return True
-
 
 
 @external

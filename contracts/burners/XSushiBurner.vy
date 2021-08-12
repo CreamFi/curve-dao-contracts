@@ -1,4 +1,4 @@
-# @version 0.2.12
+# @version 0.2.15
 """
 @title xSushi Burner
 @notice Leave SushiBar and send sushi to receiver
@@ -8,7 +8,9 @@ from vyper.interfaces import ERC20
 
 
 interface xSushi:
-    def leave(_share:uint256): nonpayable
+    def leave(_share: uint256):
+        nonpayable
+
 
 receiver: public(address)
 recovery: public(address)
@@ -17,17 +19,20 @@ is_killed: public(bool)
 emergency_owner: public(address)
 future_owner: public(address)
 future_emergency_owner: public(address)
-sushi: public(address)
-xsushi: public(address)
+
+
+SUSHI: constant(address) = 0x6B3595068778DD592e39A122f4f5a5cF09C90fE2
+XSUSHI: constant(address) = 0x8798249c2E607446EfB7Ad49eC89dD1865Ff4272
 
 
 event Burn:
     lp_token: address
     amount: uint256
-    token0_amount:uint256
+    token0_amount: uint256
+
 
 @external
-def __init__(_receiver:address, _recovery: address, _owner: address, _emergency_owner: address):
+def __init__(_receiver: address, _recovery: address, _owner: address, _emergency_owner: address):
     """
     @notice Contract constructor
     @param _receiver the receiver address to which the resultant tokens will be sent
@@ -42,11 +47,10 @@ def __init__(_receiver:address, _recovery: address, _owner: address, _emergency_
     self.recovery = _recovery
     self.owner = _owner
     self.emergency_owner = _emergency_owner
-    self.sushi = 0x6B3595068778DD592e39A122f4f5a5cF09C90fE2
-    self.xsushi = 0x8798249c2E607446EfB7Ad49eC89dD1865Ff4272
 
 
 @external
+@nonreentrant("lock")
 def burn(_coin: address) -> bool:
     """
     @notice Convert `_coin` by leaving Sushibar and get Sushi, then send it to receiver
@@ -54,8 +58,8 @@ def burn(_coin: address) -> bool:
     @return bool success
     """
     assert not self.is_killed  # dev: is killed
-    assert _coin == self.xsushi, "only allows burning xsushi"
-    
+    assert _coin == XSUSHI, "only allows burning xsushi"
+
     # transfer coins from caller
     amount: uint256 = ERC20(_coin).balanceOf(msg.sender)
     if amount != 0:
@@ -66,10 +70,11 @@ def burn(_coin: address) -> bool:
 
     if amount != 0:
         xSushi(_coin).leave(amount)
-        sushi_amount:uint256 = ERC20(self.sushi).balanceOf(self)
-        assert ERC20(self.sushi).transfer(self.receiver, sushi_amount)
+        sushi_amount: uint256 = ERC20(SUSHI).balanceOf(self)
+        assert ERC20(SUSHI).transfer(self.receiver, sushi_amount)
         log Burn(_coin, amount, sushi_amount)
     return True
+
 
 @external
 def recover_balance(_coin: address) -> bool:
@@ -122,7 +127,6 @@ def set_killed(_is_killed: bool) -> bool:
     self.is_killed = _is_killed
 
     return True
-
 
 
 @external

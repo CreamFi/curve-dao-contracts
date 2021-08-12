@@ -34,6 +34,7 @@ future_owner: public(address)
 future_emergency_owner: public(address)
 currency_keys: public(HashMap[address, bytes32])
 
+
 USDC: constant(address) = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48
 SNX: constant(address) = 0xC011a73ee8576Fb46F5E1c5751cA3B9Fe0af2a6F
 SUSD: constant(address) = 0x57Ab1ec28D129707052df4dF418D58a2D46d5f51
@@ -103,13 +104,13 @@ def burn(_coin: address) -> bool:
 
 
 @external
-@nonreentrant("lock")
 def add_synths(_synths: address[10]) -> bool:
     """
     @notice Registry synth token addresses
     @param _synths List of synth tokens to register
     @return bool success
     """
+    assert msg.sender in [self.owner, self.emergency_owner]  # dev: only owner
     for synth in _synths:
         if synth == ZERO_ADDRESS:
             break
@@ -120,7 +121,6 @@ def add_synths(_synths: address[10]) -> bool:
 
 
 @external
-@nonreentrant("lock")
 def recover_balance(_coin: address) -> bool:
     """
     @notice Recover ERC20 tokens from this contract
@@ -147,7 +147,6 @@ def recover_balance(_coin: address) -> bool:
 
 
 @external
-@nonreentrant("lock")
 def set_recovery(_recovery: address) -> bool:
     """
     @notice Set the token recovery address
@@ -161,7 +160,6 @@ def set_recovery(_recovery: address) -> bool:
 
 
 @external
-@nonreentrant("lock")
 def set_killed(_is_killed: bool) -> bool:
     """
     @notice Set killed status for this contract
@@ -176,7 +174,6 @@ def set_killed(_is_killed: bool) -> bool:
 
 
 @external
-@nonreentrant("lock")
 def commit_transfer_ownership(_future_owner: address) -> bool:
     """
     @notice Commit a transfer of ownership
@@ -191,7 +188,6 @@ def commit_transfer_ownership(_future_owner: address) -> bool:
 
 
 @external
-@nonreentrant("lock")
 def accept_transfer_ownership() -> bool:
     """
     @notice Accept a transfer of ownership
@@ -204,7 +200,6 @@ def accept_transfer_ownership() -> bool:
 
 
 @external
-@nonreentrant("lock")
 def commit_transfer_emergency_ownership(_future_owner: address) -> bool:
     """
     @notice Commit a transfer of ownership

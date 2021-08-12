@@ -1,4 +1,4 @@
-# @version 0.2.12
+# @version 0.2.15
 """
 @title Yearn Vault Token Burner
 @notice Withdraw from vault and send result to receiver
@@ -8,8 +8,12 @@ from vyper.interfaces import ERC20
 
 
 interface YearnVaultToken:
-    def withdraw(amount:uint256): nonpayable
-    def token() -> address: view
+    def withdraw(amount: uint256):
+        nonpayable
+
+    def token() -> address:
+        view
+
 
 receiver: public(address)
 recovery: public(address)
@@ -18,16 +22,17 @@ is_killed: public(bool)
 emergency_owner: public(address)
 future_owner: public(address)
 future_emergency_owner: public(address)
-burnable_coins:public(HashMap[address,address])
+burnable_coins: public(HashMap[address, address])
 
 
 event Burn:
     lp_token: address
     amount: uint256
-    token0_amount:uint256
+    token0_amount: uint256
+
 
 @external
-def __init__(_receiver:address, _recovery: address, _owner: address, _emergency_owner: address):
+def __init__(_receiver: address, _recovery: address, _owner: address, _emergency_owner: address):
     """
     @notice Contract constructor
     @param _receiver the receiver address to which the resultant tokens will be sent
@@ -42,11 +47,10 @@ def __init__(_receiver:address, _recovery: address, _owner: address, _emergency_
     self.recovery = _recovery
     self.owner = _owner
     self.emergency_owner = _emergency_owner
-    
-
 
 
 @external
+@nonreentrant("lock")
 def burn(_coin: address) -> bool:
     """
     @notice Convert `_coin` by leaving Sushibar and get Sushi, then send it to receiver
@@ -55,7 +59,7 @@ def burn(_coin: address) -> bool:
     """
     assert not self.is_killed  # dev: is killed
     assert self.burnable_coins[_coin] != ZERO_ADDRESS, "token not burnable"
-    
+
     # transfer coins from caller
     amount: uint256 = ERC20(_coin).balanceOf(msg.sender)
     if amount != 0:
@@ -63,18 +67,18 @@ def burn(_coin: address) -> bool:
 
     # get actual balance in case of transfer fee or pre-existing balance
     amount = ERC20(_coin).balanceOf(self)
-    result_token:address = self.burnable_coins[_coin]
+    result_token: address = self.burnable_coins[_coin]
 
     if amount != 0:
         YearnVaultToken(_coin).withdraw(amount)
-        result_token_amount:uint256 = ERC20(result_token).balanceOf(self)
+        result_token_amount: uint256 = ERC20(result_token).balanceOf(self)
         assert ERC20(result_token).transfer(self.receiver, result_token_amount)
         log Burn(_coin, amount, result_token_amount)
     return True
 
 
 @external
-def add_burnable_coin(_coin:address) -> bool:
+def add_burnable_coin(_coin: address) -> bool:
     """
     @notice allow more Yearn Vault CRV LP Tokens to be burned with this burner
     @param _coin Yearn Vault CRV LP Token
@@ -83,7 +87,7 @@ def add_burnable_coin(_coin:address) -> bool:
     assert msg.sender in [self.owner, self.emergency_owner]  # dev: only owner
     self.burnable_coins[_coin] = YearnVaultToken(_coin).token()
     return True
-    
+
 
 @external
 def recover_balance(_coin: address) -> bool:
@@ -136,7 +140,6 @@ def set_killed(_is_killed: bool) -> bool:
     self.is_killed = _is_killed
 
     return True
-
 
 
 @external

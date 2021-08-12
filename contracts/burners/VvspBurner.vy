@@ -1,4 +1,4 @@
-# @version 0.2.12
+# @version 0.2.15
 """
 @title VVSP Burner
 @notice Withdraw from Vvsp and send VSP to receiver
@@ -8,7 +8,9 @@ from vyper.interfaces import ERC20
 
 
 interface Vvsp:
-    def withdraw(shares:uint256): nonpayable
+    def withdraw(shares: uint256):
+        nonpayable
+
 
 receiver: public(address)
 recovery: public(address)
@@ -17,17 +19,20 @@ is_killed: public(bool)
 emergency_owner: public(address)
 future_owner: public(address)
 future_emergency_owner: public(address)
-vsp: public(address)
-vvsp: public(address)
+
+
+VSP: constant(address) = 0x1b40183EFB4Dd766f11bDa7A7c3AD8982e998421
+VVSP: constant(address) = 0xbA4cFE5741b357FA371b506e5db0774aBFeCf8Fc
 
 
 event Burn:
     lp_token: address
     amount: uint256
-    token0_amount:uint256
+    token0_amount: uint256
+
 
 @external
-def __init__(_receiver:address, _recovery: address, _owner: address, _emergency_owner: address):
+def __init__(_receiver: address, _recovery: address, _owner: address, _emergency_owner: address):
     """
     @notice Contract constructor
     @param _receiver the receiver address to which the resultant tokens will be sent
@@ -42,11 +47,10 @@ def __init__(_receiver:address, _recovery: address, _owner: address, _emergency_
     self.recovery = _recovery
     self.owner = _owner
     self.emergency_owner = _emergency_owner
-    self.vsp = 0x1b40183EFB4Dd766f11bDa7A7c3AD8982e998421
-    self.vvsp = 0xbA4cFE5741b357FA371b506e5db0774aBFeCf8Fc
 
 
 @external
+@nonreentrant("lock")
 def burn(_coin: address) -> bool:
     """
     @notice Convert `_coin` by withdrawing vvsp and get vsp, then send it to receiver
@@ -54,8 +58,8 @@ def burn(_coin: address) -> bool:
     @return bool success
     """
     assert not self.is_killed  # dev: is killed
-    assert _coin == self.vvsp, "only allows burning vvsp"
-    
+    assert _coin == VVSP, "only allows burning vvsp"
+
     # transfer coins from caller
     amount: uint256 = ERC20(_coin).balanceOf(msg.sender)
     if amount != 0:
@@ -66,10 +70,11 @@ def burn(_coin: address) -> bool:
 
     if amount != 0:
         Vvsp(_coin).withdraw(amount)
-        vsp_amount:uint256 = ERC20(self.vsp).balanceOf(self)
-        assert ERC20(self.vsp).transfer(self.receiver, vsp_amount)
+        vsp_amount: uint256 = ERC20(VSP).balanceOf(self)
+        assert ERC20(VSP).transfer(self.receiver, vsp_amount)
         log Burn(_coin, amount, vsp_amount)
     return True
+
 
 @external
 def recover_balance(_coin: address) -> bool:
@@ -122,7 +127,6 @@ def set_killed(_is_killed: bool) -> bool:
     self.is_killed = _is_killed
 
     return True
-
 
 
 @external
