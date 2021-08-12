@@ -1,45 +1,57 @@
-# @version 0.2.8
+# @version 0.2.15
 """
 @title cToken Burner
-@notice redeem cToken and send underlyings to receiver
+@notice Redeem cToken and send underlyings to receiver
 """
 
 from vyper.interfaces import ERC20
 
 
 interface cERC20:
-    def redeem(redeemTokens: uint256) -> uint256: nonpayable
-    def underlying() -> address: view
+    def redeem(redeemTokens: uint256) -> uint256:
+        nonpayable
+
+    def underlying() -> address:
+        view
+
 
 interface Burner:
-    def burn(_coin:address) -> bool: nonpayable
+    def burn(_coin: address) -> bool:
+        nonpayable
+
 
 receiver: public(address)
 recovery: public(address)
 is_killed: public(bool)
-
 owner: public(address)
 emergency_owner: public(address)
 future_owner: public(address)
 future_emergency_owner: public(address)
 usdc_burner: public(address)
 
+
 USDC: constant(address) = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48
 
 
 @external
-def __init__(_receiver: address, _recovery: address, _owner: address, _emergency_owner: address, _usdc_burner: address):
+def __init__(
+    _receiver: address,
+    _recovery: address,
+    _owner: address,
+    _emergency_owner: address,
+    _usdc_burner: address,
+):
     """
     @notice Contract constructor
     @param _receiver Address that converted tokens are transferred to.
-                     Should be set to an `UnderlyingBurner` deployment.
+                     Should be set to an UniswapBurner
     @param _recovery Address that tokens are transferred to during an
                      emergency token recovery.
     @param _owner Owner address. Can kill the contract, recover tokens
                   and modify the recovery address.
     @param _emergency_owner Emergency owner address. Can kill the contract
                             and recover tokens.
-    @param _usdc_burner usdc burner
+    @param _usdc_burner USDC Burner, used when underlying token is already USDC
     """
     self.receiver = _receiver
     self.recovery = _recovery
@@ -49,6 +61,7 @@ def __init__(_receiver: address, _recovery: address, _owner: address, _emergency
 
 
 @external
+@nonreentrant("lock")
 def burn(_coin: address) -> bool:
     """
     @notice convert _coin
@@ -75,7 +88,7 @@ def burn(_coin: address) -> bool:
             receiver = self.usdc_burner
         amount = ERC20(underlying).balanceOf(self)
 
-        # transfer underlying to underlying burner
+        # transfer underlying to receiver
         response: Bytes[32] = raw_call(
             underlying,
             concat(
@@ -142,7 +155,6 @@ def set_killed(_is_killed: bool) -> bool:
     self.is_killed = _is_killed
 
     return True
-
 
 
 @external

@@ -1,26 +1,27 @@
-# @version 0.2.8
+# @version 0.2.15
 """
 @title Uniswap Burner
-@notice Swaps coins to USDC using Uniswap V3, and transfers to receiver
+@notice Swap coins to USDC using Uniswap V3, and transfer to receiver
 """
 
 from vyper.interfaces import ERC20
+
+
+is_approved: HashMap[address, bool]
+receiver: public(address)
+recovery: public(address)
+is_killed: public(bool)
+owner: public(address)
+emergency_owner: public(address)
+future_owner: public(address)
+future_emergency_owner: public(address)
+burnable_coins: public(HashMap[address, uint256])
+
 
 USDC: constant(address) = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48
 ROUTER: constant(address) = 0xE592427A0AEce92De3Edee1F18E0157C05861564  # uniswap v3 swap router
 
 
-is_approved: HashMap[address, bool]
-
-receiver: public(address)
-recovery: public(address)
-is_killed: public(bool)
-
-owner: public(address)
-emergency_owner: public(address)
-future_owner: public(address)
-future_emergency_owner: public(address)
-burnable_coins:public(HashMap[address,uint256])
 @external
 def __init__(_receiver: address, _recovery: address, _owner: address, _emergency_owner: address):
     """
@@ -40,6 +41,7 @@ def __init__(_receiver: address, _recovery: address, _owner: address, _emergency
 
 
 @external
+@nonreentrant("lock")
 def burn(_coin: address) -> bool:
     """
     @notice Receive `_coin` and swap it for USDC using Uniswap V3
@@ -50,7 +52,7 @@ def burn(_coin: address) -> bool:
 
     # transfer coins from caller
     amount: uint256 = ERC20(_coin).balanceOf(msg.sender)
-    fee:uint256 = self.burnable_coins[_coin]
+    fee: uint256 = self.burnable_coins[_coin]
     assert fee != 0, "coin is not yet added to burnable_coins for this burner"
     if amount != 0:
         response: Bytes[32] = raw_call(
@@ -67,7 +69,7 @@ def burn(_coin: address) -> bool:
             assert convert(response, bool)
 
     # get actual balance in case of transfer fee or pre-existing balance
-    amount = ERC20(_coin).balanceOf(self)    
+    amount = ERC20(_coin).balanceOf(self)
     if not self.is_approved[_coin]:
         response: Bytes[32] = raw_call(
             _coin,
@@ -82,20 +84,21 @@ def burn(_coin: address) -> bool:
             assert convert(response, bool)
         self.is_approved[_coin] = True
 
-    
     # vyper doesn't support uint24 so we build the calldata manually
     response: Bytes[32] = raw_call(
         ROUTER,
         concat(
-        method_id("exactInputSingle((address,address,uint24,address,uint256,uint256,uint256,uint160))"),
-        convert(_coin, bytes32), #tokenIn:address
-        convert(USDC, bytes32), #tokenOut:address
-        convert(fee, bytes32), #fee:uint24
-        convert(self.receiver, bytes32), #recipient:address
-        convert(block.timestamp, bytes32), #deadline:uint256
-        convert(amount, bytes32), #amountIn:uint256
-        convert(0, bytes32), #amountOutMinimum:uint256
-        convert(0, bytes32), #sqrtPriceLimitX96:uint160
+            method_id(
+                "exactInputSingle((address,address,uint24,address,uint256,uint256,uint256,uint160))"
+            ),
+            convert(_coin, bytes32),  # tokenIn:address
+            convert(USDC, bytes32),  # tokenOut:address
+            convert(fee, bytes32),  # fee:uint24
+            convert(self.receiver, bytes32),  # recipient:address
+            convert(block.timestamp, bytes32),  # deadline:uint256
+            convert(amount, bytes32),  # amountIn:uint256
+            convert(0, bytes32),  # amountOutMinimum:uint256
+            convert(0, bytes32),  # sqrtPriceLimitX96:uint160
         ),
         max_outsize=32,
     )
@@ -103,8 +106,9 @@ def burn(_coin: address) -> bool:
     assert convert(response, uint256) > 0, "swap output amount cannot be zero"
     return True
 
+
 @external
-def add_burnable_coin(_coin:address, _fee:uint256) -> bool:
+def add_burnable_coin(_coin: address, _fee: uint256) -> bool:
     """
     @notice add coin and fee for uniswap v3 pool
     @param _coin coin to be swapped for usdc
@@ -114,7 +118,8 @@ def add_burnable_coin(_coin:address, _fee:uint256) -> bool:
     assert msg.sender in [self.owner, self.emergency_owner]  # dev: only owner
     self.burnable_coins[_coin] = _fee
     return True
-    
+
+
 @external
 def recover_balance(_coin: address) -> bool:
     """
@@ -166,7 +171,6 @@ def set_killed(_is_killed: bool) -> bool:
     self.is_killed = _is_killed
 
     return True
-
 
 
 @external

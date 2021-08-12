@@ -1,20 +1,38 @@
-# @version 0.2.12
+# @version 0.2.15
 """
 @title Uniswap LP Burner
-@notice Given a Uniswap LP token, withdraw from the pool, and send the withdrawed two tokens to next level burner
+@notice Given a Uniswap LP token, withdraw from the pool, and send the withdrawn two tokens to receiver
 """
 
 from vyper.interfaces import ERC20
 
 
 interface UniswapV2Pair:
-    def token0() -> address: view
-    def token1() -> address: view
-    def factory() -> address: view
+    def token0() -> address:
+        view
+
+    def token1() -> address:
+        view
+
+    def factory() -> address:
+        view
+
 
 interface UniswapV2Router02:
-    def removeLiquidity(tokenA:address, tokenB:address, liquidity:uint256, amountAMin:uint256, amountBMin:uint256, to:address, deadline:uint256) -> uint256[2]: nonpayable
-    def factory() -> address: view
+    def removeLiquidity(
+        tokenA: address,
+        tokenB: address,
+        liquidity: uint256,
+        amountAMin: uint256,
+        amountBMin: uint256,
+        to: address,
+        deadline: uint256,
+    ) -> uint256[2]:
+        nonpayable
+
+    def factory() -> address:
+        view
+
 
 receiver: public(address)
 recovery: public(address)
@@ -24,19 +42,22 @@ emergency_owner: public(address)
 future_owner: public(address)
 future_emergency_owner: public(address)
 
+
 routers: constant(address[2]) = [
     0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D, # uniswap
-    0xd9e1cE17f2641f24aE83637ab66a2cca9C378B9F # sushiswap
+    0xd9e1cE17f2641f24aE83637ab66a2cca9C378B9F, # sushiswap
 ]
+
 
 event Burn:
     lp_token: address
     amount: uint256
-    token0_amount:uint256
-    token1_amount:uint256
+    token0_amount: uint256
+    token1_amount: uint256
+
 
 @external
-def __init__(_receiver:address, _recovery: address, _owner: address, _emergency_owner: address):
+def __init__(_receiver: address, _recovery: address, _owner: address, _emergency_owner: address):
     """
     @notice Contract constructor
     @param _receiver the receiver address to which the resultant tokens will be sent
@@ -53,8 +74,8 @@ def __init__(_receiver:address, _recovery: address, _owner: address, _emergency_
     self.emergency_owner = _emergency_owner
 
 
-
 @external
+@nonreentrant("lock")
 def burn(_coin: address) -> bool:
     """
     @notice Convert `_coin` by removing liquidity and send the resultant tokens to receiver
@@ -62,7 +83,7 @@ def burn(_coin: address) -> bool:
     @return bool success
     """
     assert not self.is_killed  # dev: is killed
-    
+
     # transfer coins from caller
     lp_amount: uint256 = ERC20(_coin).balanceOf(msg.sender)
     if lp_amount != 0:
@@ -73,17 +94,20 @@ def burn(_coin: address) -> bool:
 
     if lp_amount != 0:
         # remove liquidity and pass to receiver
-        token0:address = UniswapV2Pair(_coin).token0()
-        token1:address = UniswapV2Pair(_coin).token1()
-        router:address = ZERO_ADDRESS
+        token0: address = UniswapV2Pair(_coin).token0()
+        token1: address = UniswapV2Pair(_coin).token1()
+        router: address = ZERO_ADDRESS
         for r in routers:
             if UniswapV2Router02(r).factory() == UniswapV2Pair(_coin).factory():
                 router = r
         assert router != ZERO_ADDRESS
         ERC20(_coin).approve(router, lp_amount)
-        token_amounts:uint256[2] = UniswapV2Router02(router).removeLiquidity(token0, token1, lp_amount, 0, 0, self.receiver, block.timestamp) 
+        token_amounts: uint256[2] = UniswapV2Router02(router).removeLiquidity(
+            token0, token1, lp_amount, 0, 0, self.receiver, block.timestamp
+        )
         log Burn(_coin, lp_amount, token_amounts[0], token_amounts[1])
     return True
+
 
 @external
 def recover_balance(_coin: address) -> bool:
@@ -136,7 +160,6 @@ def set_killed(_is_killed: bool) -> bool:
     self.is_killed = _is_killed
 
     return True
-
 
 
 @external
