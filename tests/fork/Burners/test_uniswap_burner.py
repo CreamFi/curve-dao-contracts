@@ -2,8 +2,6 @@ import brownie
 import pytest
 
 from abi.ERC20 import ERC20
-from abi.USDT import USDT as USDT_abi
-from abi.WBTC import WBTC as WBTC_abi
 
 
 @pytest.fixture(scope="module")
@@ -69,65 +67,71 @@ WNXM = "0x0d438f3b5175bebc262bf23753c1e53d03432bde"
 WOO = "0x4691937a7508860f876c9c0a2a617e7d9e945d4b"
 YFI = "0x0bc529c00c6401aef6d220be8c6ea1667f6ad93e"
 WETH = "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
-TOKENS = {
-    ONE_INCH: ERC20,
-    BBADGER: ERC20,
-    AAVE: ERC20,
-    AKRO: ERC20,
-    ALPHA: ERC20,
-    AMP: ERC20,
-    ARMOR: ERC20,
-    ARNXM: ERC20,
-    BAL: ERC20,
-    BNT: ERC20,
-    BOND: ERC20,
-    BBTC: ERC20,
-    BUSD: ERC20,
-    CEL: ERC20,
-    COMP: ERC20,
-    COVER: ERC20,
-    CRV: ERC20,
-    DAI: WBTC_abi,
-    DPI: ERC20,
-    ESD: ERC20,
-    # FEI: ERC20, #TODO: why failed?
-    FRAX: ERC20,
-    FTM: ERC20,
-    FTT: ERC20,
-    GNO: ERC20,
-    HBTC: ERC20,
-    HEGIC: ERC20,
-    HFIL: ERC20,
-    HUSD: ERC20,
-    KP3R: ERC20,
-    LINK: ERC20,
-    MLN: ERC20,
-    MTA: ERC20,
-    OCEAN: ERC20,
-    OGN: ERC20,
-    OMG: ERC20,
-    PERP: ERC20,
-    PICKLE: ERC20,
-    # RAI: ERC20, # failed, ignore for now
-    RARI: ERC20,
-    RENBTC: WBTC_abi,
-    RUNE: ERC20,
-    SFI: ERC20,
-    SNX: ERC20,
-    SRM: ERC20,
-    SUSD: ERC20,
-    SUSHI: ERC20,
-    SWAG: ERC20,
-    SWAP: ERC20,
-    UNI: ERC20,
-    USDT: USDT_abi,
-    VSP: ERC20,
-    UST: ERC20,
-    WBTC: WBTC_abi,
-    WNXM: ERC20,
-    WOO: ERC20,
-    YFI: ERC20,
-}
+
+
+# Iron Bank
+EURS = "0xdb25f211ab05b1c97d595516f45794528a807ad8"
+
+TOKENS = [
+    (ONE_INCH, "0x5e89f8d81c74e311458277ea1be3d3247c7cd7d1"),
+    (BBADGER, "0xa9429271a28f8543efffa136994c0839e7d7bf77"),
+    (AAVE, "0x4da27a545c0c5b758a6ba100e3a049001de870f5"),
+    (AKRO, "0xF977814e90dA44bFA03b6295A0616a897441aceC"),
+    (ALPHA, "0x580cE7B92F185D94511c9636869d28130702F68E"),
+    (AMP, "0xec0527db0ba7c32d899fa100bc9ccadf40ca491c"),
+    (ARMOR, "0x1f28ed9d4792a567dad779235c2b766ab84d8e33"),
+    (ARNXM, "0x28a55c4b4f9615fde3cdaddf6cc01fcf2e38a6b0"),
+    (BAL, "0xba12222222228d8ba445958a75a0704d566bf2c8"),
+    (BNT, "0x4c9a2bd661d640da3634a4988a9bd2bc0f18e5a9"),
+    (BOND, "0x4cae362d7f227e3d306f70ce4878e245563f3069"),
+    (BBTC, "0xf977814e90da44bfa03b6295a0616a897441acec"),
+    (BUSD, "0xF977814e90dA44bFA03b6295A0616a897441aceC"),
+    (CEL, "0x84e1f49a6b65882c7365b6a775999cfcb481f22f"),
+    (COMP, "0xF977814e90dA44bFA03b6295A0616a897441aceC"),
+    (COVER, "0xF977814e90dA44bFA03b6295A0616a897441aceC"),
+    (CRV, "0xF977814e90dA44bFA03b6295A0616a897441aceC"),
+    (DAI, "0x5d3a536e4d6dbd6114cc1ead35777bab948e3643"),
+    (DPI, "0x2A537Fa9FFaea8C1A41D3C2B68a9cb791529366D"),
+    (ESD, "0xD5d5A7CB1807364CDE0BAd51D0a7D758943aB114"),
+    (FRAX, "0xd632f22692fac7611d2aa1c0d552930d43caed3b"),
+    (FTM, "0xF977814e90dA44bFA03b6295A0616a897441aceC"),
+    (FTT, "0xd769010d3813bafaf4addbfe258eafd07828bb83"),
+    (GNO, "0xec83f750adfe0e52a8b0dba6eeb6be5ba0bee535"),
+    (HBTC, "0xa929022c9107643515f5c777ce9a910f0d1e490c"),
+    (HEGIC, "0x736f85bf359e3e2db736d395ed8a4277123eeee1"),
+    (HFIL, "0xa929022c9107643515f5c777ce9a910f0d1e490c"),
+    (HUSD, "0xa929022c9107643515f5c777ce9a910f0d1e490c"),
+    (KP3R, "0xF977814e90dA44bFA03b6295A0616a897441aceC"),
+    (LINK, "0xF977814e90dA44bFA03b6295A0616a897441aceC"),
+    (MLN, "0xd8f8a53945bcfbbc19da162aa405e662ef71c40d"),
+    (MTA, "0x3dd46846eed8d147841ae162c8425c08bd8e1b41"),
+    (OCEAN, "0xd5e6219a79c5cc61b9074331d1b05a6f35c5a48a"),
+    (OGN, "0xf977814e90da44bfa03b6295a0616a897441acec"),
+    (OMG, "0xf977814e90da44bfa03b6295a0616a897441acec"),
+    (PERP, "0xc49f76a596d6200e4f08f8931d15b69dd1f8033e"),
+    (PICKLE, "0xbbcf169ee191a1ba7371f30a1c344bfc498b29cf"),
+    (RARI, "0xfdff6b56cce39482032b27140252ff4f16432785"),
+    (RENBTC, "0x4f868c1aa37fcf307ab38d215382e88fca6275e2"),
+    (RUNE, "0x46e3a8c8135647b48b2e82198e42e0c69eacbab8"),
+    (SFI, "0x90b397f0962c3bc624f8ebc810c1e68655a4d0d3"),
+    (SNX, "0x767ecb395def19ab8d1b2fcc89b3ddfbed28fd6b"),
+    (SRM, "0x0548f59fee79f8832c299e01dca5c76f034f558e"),
+    (SUSD, "0xa5f7a39e55d7878bc5bd754ee5d6bd7a7662355b"),
+    (SUSHI, "0xcbe6b83e77cdc011cc18f6f0df8444e5783ed982"),
+    (SWAG, "0x9c1be2d263024b07afb9d7f9bccb06775aba94b0"),
+    (SWAP, "0x5a753021ce28cbc5a7c51f732ba83873d673d8cc"),
+    (UNI, "0xe3953d9d317b834592ab58ab2c7a6ad22b54075d"),
+    (USDT, "0xa929022c9107643515f5c777ce9a910f0d1e490c"),
+    (VSP, "0x9520b477aa81180e6ddc006fc09fb6d3eb4e807a"),
+    (UST, "0x40ec5b33f54e0e8a33a975908c5ba1c14e5bbbdf"),
+    (WBTC, "0xccf4429db6322d5c611ee964527d42e5d685dd6a"),
+    (WNXM, "0xf977814e90da44bfa03b6295a0616a897441acec"),
+    (WOO, "0xf0b8660476ea1af0f363de8816e3e7cd1c8f1fde"),
+    (YFI, "0x3ff33d9162ad47660083d7dc4bc02fb231c81677"),
+    (EURS, "0x0ce6a5ff5217e38315f87032cf90686c96627caa"),
+    (FEI, "0xf5bce5077908a1b7370b9ae04adc565ebd643966"),
+    (RAI, "0x86b0e9e05f0295adb39799a402d2992d10439454"),
+]
 
 
 def test_burn_weth(MintableTestToken, USDC, alice, receiver, burner):
@@ -148,13 +152,12 @@ def test_burn_weth(MintableTestToken, USDC, alice, receiver, burner):
     assert USDC.balanceOf(receiver) > 0
 
 
-@pytest.mark.parametrize("token,abi", [(token, abi) for token, abi in TOKENS.items()])
-def test_burn(MintableTestToken, USDC, alice, receiver, burner, token, abi):
-    token = MintableTestToken.from_abi("token", token, abi=abi)
+@pytest.mark.parametrize("token,whale", TOKENS)
+def test_burn(MintableTestToken, USDC, alice, receiver, burner, token, whale):
+    token = MintableTestToken.from_abi("token", token, abi=ERC20)
+    amount = 1000 * (10 ** token.decimals())
+    token.transfer(alice, amount, {"from": whale})
 
-    amount = 100 * (10 ** token.decimals())
-
-    token._mint_for_testing(alice, amount, {"from": alice})
     assert token.balanceOf(alice) == amount
     token.approve(burner, 2 ** 256 - 1, {"from": alice})
 
