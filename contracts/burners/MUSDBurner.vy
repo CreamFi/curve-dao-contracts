@@ -52,6 +52,7 @@ def __init__(_receiver: address, _recovery: address, _owner: address, _emergency
 
 
 @external
+@nonreentrant("lock")
 def burn(_coin: address) -> bool:
     """
     @notice Convert `_coin` to USDC by withdrawing
