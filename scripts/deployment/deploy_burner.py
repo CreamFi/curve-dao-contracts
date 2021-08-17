@@ -62,7 +62,12 @@ def development():
     MUSDBurner.deploy(usdc_burner, RECOVERY, OWNER_ADMIN, EMERGENCY_ADMIN, {"from": deployer})
 
     # deploy and setup synth burner
-    SynthBurner.deploy(uniswap_burner, RECOVERY, OWNER_ADMIN, EMERGENCY_ADMIN, {"from": deployer})
+    synth_burner = SynthBurner.deploy(
+        uniswap_burner, RECOVERY, OWNER_ADMIN, EMERGENCY_ADMIN, {"from": deployer}
+    )
+    SEUR = "0xD71eCFF9342A5Ced620049e616c5035F1dB98620"
+    ZERO_ADDRESS = "0x" + "0" * 40
+    synth_burner.add_synths([SEUR] + [ZERO_ADDRESS] * 9, {"from": OWNER_ADMIN})
 
     # deploy and setup compound burner
     CBurner.deploy(
