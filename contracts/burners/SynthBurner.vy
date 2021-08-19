@@ -224,3 +224,15 @@ def accept_transfer_emergency_ownership() -> bool:
     self.emergency_owner = msg.sender
 
     return True
+
+
+@external
+def set_receiver(_receiver: address) -> bool:
+    """
+    @notice Set receiver
+    @param _receiver Receiver address
+    @return bool success
+    """
+    assert msg.sender in [self.owner, self.emergency_owner]  # dev: only owner
+    self.receiver = _receiver
+    return True

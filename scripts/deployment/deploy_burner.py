@@ -106,7 +106,9 @@ def development():
         uniswap_burner, RECOVERY, OWNER_ADMIN, EMERGENCY_ADMIN, {"from": deployer}
     )
     yWeth = "0xe1237aa7f535b0cc33fd973d66cbf830354d16c7"
+    yvWeth = "0xa9fe4601811213c340e850ea305481aff02f5b28"
     yearn_vault_burner.add_burnable_coin(yWeth, {"from": OWNER_ADMIN})
+    yearn_vault_burner.add_burnable_coin(yvWeth, {"from": OWNER_ADMIN})
 
     # deploy and setup another yearn vault burner that sends result to curve lp burner
     yearn_vault_burner_2 = YearnVaultBurner.deploy(
