@@ -67,7 +67,8 @@ WNXM = "0x0d438f3b5175bebc262bf23753c1e53d03432bde"
 WOO = "0x4691937a7508860f876c9c0a2a617e7d9e945d4b"
 YFI = "0x0bc529c00c6401aef6d220be8c6ea1667f6ad93e"
 WETH = "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
-
+LON = "0x0000000000095413afC295d19EDeb1Ad7B71c952"
+PAX = "0x8E870D67F660D95d5be530380D0eC0bd388289E1"
 
 # Iron Bank
 EURS = "0xdb25f211ab05b1c97d595516f45794528a807ad8"
@@ -131,6 +132,8 @@ TOKENS = [
     (EURS, "0x0ce6a5ff5217e38315f87032cf90686c96627caa"),
     (FEI, "0xf5bce5077908a1b7370b9ae04adc565ebd643966"),
     (RAI, "0x86b0e9e05f0295adb39799a402d2992d10439454"),
+    (PAX, "0xf977814e90da44bfa03b6295a0616a897441acec"),
+    (LON, "0x0e57941a7c55f96c9153de218effcbfc4ae8e9dc"),
 ]
 
 
@@ -158,7 +161,6 @@ def test_burn(MintableTestToken, USDC, alice, receiver, burner, token, whale):
     amount = 1000 * (10 ** token.decimals())
     token.transfer(alice, amount, {"from": whale})
 
-    assert token.balanceOf(alice) == amount
     token.approve(burner, 2 ** 256 - 1, {"from": alice})
 
     burner.burn(token, {"from": alice})

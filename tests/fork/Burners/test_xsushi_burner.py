@@ -40,3 +40,28 @@ def test_burn_invalid_token(MintableTestToken, alice, burner):
     sushi = MintableTestToken.from_abi("Sushi", SUSHI, abi=ERC20)
     with brownie.reverts("only allows burning xsushi"):
         burner.burn(sushi, {"from": alice})
+
+
+def test_set_receiver(MintableTestToken, alice, receiver, burner, bob):
+    xSushi = MintableTestToken.from_abi("xSushi", XSUSHI, abi=ERC20)
+    sushi = MintableTestToken.from_abi("Sushi", SUSHI, abi=ERC20)
+    amount = 10 ** xSushi.decimals()
+
+    xSushi._mint_for_testing(alice, amount, {"from": alice})
+    xSushi.approve(burner, 2 ** 256 - 1, {"from": alice})
+
+    assert xSushi.balanceOf(alice) == amount
+    assert xSushi.balanceOf(burner) == 0
+    assert xSushi.balanceOf(receiver) == 0
+
+    burner.set_receiver(bob, {"from": alice})
+    burner.burn(xSushi, {"from": alice})
+
+    assert xSushi.balanceOf(alice) == 0
+    assert xSushi.balanceOf(burner) == 0
+    assert xSushi.balanceOf(receiver) == 0
+
+    assert sushi.balanceOf(alice) == 0
+    assert sushi.balanceOf(burner) == 0
+    assert sushi.balanceOf(receiver) == 0
+    assert sushi.balanceOf(bob) > 0

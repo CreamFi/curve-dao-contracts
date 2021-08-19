@@ -19,14 +19,6 @@ interface YVaultIB3CRV:
         nonpayable
 
 
-interface FeeDistributor:
-    def checkpoint_token():
-        nonpayable
-
-    def checkpoint_total_supply():
-        nonpayable
-
-
 receiver: public(address)
 recovery: public(address)
 owner: public(address)
@@ -94,9 +86,6 @@ def burn(_coin: address) -> bool:
         yvault_ib3_crv_amount: uint256 = YVaultIB3CRV(YVAULT_IB3CRV).deposit(
             ib3_crv_amount, self.receiver
         )
-        # checkpoint fee distributor
-        FeeDistributor(self.receiver).checkpoint_token()
-        FeeDistributor(self.receiver).checkpoint_total_supply()
         log Burn(amount, yvault_ib3_crv_amount)
     return True
 
@@ -203,4 +192,15 @@ def accept_transfer_emergency_ownership() -> bool:
     assert msg.sender == self.future_emergency_owner  # dev: only owner
     self.emergency_owner = msg.sender
 
+    return True
+
+@external
+def set_receiver(_receiver: address) -> bool:
+    """
+    @notice Set receiver
+    @param _receiver Receiver address
+    @return bool success
+    """
+    assert msg.sender in [self.owner, self.emergency_owner]  # dev: only owner
+    self.receiver = _receiver
     return True
