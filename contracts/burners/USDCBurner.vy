@@ -21,11 +21,13 @@ interface YVaultIB3CRV:
 
 receiver: public(address)
 recovery: public(address)
+treasury: public(address)
 owner: public(address)
 is_killed: public(bool)
 emergency_owner: public(address)
 future_owner: public(address)
 future_emergency_owner: public(address)
+ratio: public(uint256)
 
 
 USDC: constant(address) = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48
@@ -40,7 +42,7 @@ event Burn:
 
 
 @external
-def __init__(_receiver: address, _recovery: address, _owner: address, _emergency_owner: address):
+def __init__(_receiver: address, _recovery: address, _owner: address, _emergency_owner: address, _treasury: address):
     """
     @notice Contract constructor
     @param _receiver the receiver address to which the resultant tokens will be sent, should be a FeeDistributor address
@@ -50,11 +52,13 @@ def __init__(_receiver: address, _recovery: address, _owner: address, _emergency
                   and modify the recovery address.
     @param _emergency_owner Emergency owner address. Can kill the contract
                             and recover tokens.
+    @param _treasury The treasury address.
     """
     self.receiver = _receiver
     self.recovery = _recovery
     self.owner = _owner
     self.emergency_owner = _emergency_owner
+    self.treasury = _treasury
 
 
 @external
@@ -77,16 +81,22 @@ def burn(_coin: address) -> bool:
     amount = ERC20(_coin).balanceOf(self)
 
     if amount != 0:
-        # convert usdc to ib3crv
-        ERC20(_coin).approve(IB3CRV_POOL, amount)
-        amounts: uint256[3] = [0, amount, 0]
-        ib3_crv_amount: uint256 = IB3CRVPool(IB3CRV_POOL).add_liquidity(amounts, 0, True)
-        # convert ib3crv to yvib3crv, then send to receiver
-        ERC20(IB3CRV).approve(YVAULT_IB3CRV, ib3_crv_amount)
-        yvault_ib3_crv_amount: uint256 = YVaultIB3CRV(YVAULT_IB3CRV).deposit(
-            ib3_crv_amount, self.receiver
-        )
-        log Burn(amount, yvault_ib3_crv_amount)
+        _treasury_amount: uint256 = amount * self.ratio / 10000
+        if _treasury_amount > 0:
+            ERC20(_coin).transfer(self.treasury, _treasury_amount)
+
+        _burn_amount: uint256 = amount - _treasury_amount
+        if _burn_amount > 0:
+            # convert usdc to ib3crv
+            ERC20(_coin).approve(IB3CRV_POOL, _burn_amount)
+            amounts: uint256[3] = [0, _burn_amount, 0]
+            ib3_crv_amount: uint256 = IB3CRVPool(IB3CRV_POOL).add_liquidity(amounts, 0, True)
+            # convert ib3crv to yvib3crv, then send to receiver
+            ERC20(IB3CRV).approve(YVAULT_IB3CRV, ib3_crv_amount)
+            yvault_ib3_crv_amount: uint256 = YVaultIB3CRV(YVAULT_IB3CRV).deposit(
+                ib3_crv_amount, self.receiver
+            )
+            log Burn(_burn_amount, yvault_ib3_crv_amount)
     return True
 
 
@@ -203,4 +213,18 @@ def set_receiver(_receiver: address) -> bool:
     """
     assert msg.sender in [self.owner, self.emergency_owner]  # dev: only owner
     self.receiver = _receiver
+    return True
+
+
+@external
+def set_ratio(_ratio: uint256) -> bool:
+    """
+    @notice Set the ratio
+    @param _ratio The ratio in bps
+    @return bool success
+    """
+    assert msg.sender == self.owner  # dev: only owner
+    assert _ratio <= 10000
+    self.ratio = _ratio
+
     return True
