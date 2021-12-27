@@ -1,3 +1,4 @@
+import pytest
 from brownie import Contract, FeeDistributor, UniswapBurner, USDCBurner, VotingEscrow
 
 from abi.ERC20 import ERC20
@@ -17,6 +18,33 @@ WETH = "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
 USDC = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
 USDC_BURNER = "0x0980f2F0D2af35eF2c4521b2342D59db575303F7"
 UNISWAP_BURNER = "0x79EA17bEE0a8dcb900737E8CAa247c8358A5dfa1"
+WHALE = "0xd6d16B110ea9173d7cEB6CFe8Ca4060749A75f5c"
+
+
+@pytest.mark.parametrize("day", range(1, 7))
+def test_claim(web3, chain, accounts, MintableTestToken, day):
+    yvault_ib3_crv = MintableTestToken.from_abi("YVAULT_IB3_CRV", YVAULT_IB3_CRV, abi=ERC20)
+    whale = accounts.at(WHALE, True)
+    fee_distributor = Contract.from_abi("FeeDistributor", FEE_DISTRIBUTOR, FeeDistributor.abi)
+
+    # send money to fee distro, current mainnet fork block is 13059466
+    # time Aug-20-2021 02:26:54 AM UTC+0
+    yvault_ib3_crv.transfer(fee_distributor, 2831000, {"from": whale})
+
+    # sleep for days
+    chain.sleep(60 * 60 * 24 * day)
+    chain.mine()
+    # this user create_lock on Monday, Aug-16-2021 10:49:44 AM UTC+0
+    # this user is entitled to fees burned between
+    # Aug-19-2021 00:00:00 AM UTC + 0 to Aug-26-2021 00:00:00 AM UTC+0 (exclusive)
+    user = accounts.at("0xcc876be657b5d3d80cb9d483fb846766a8b80185", True)
+    initial_balance = yvault_ib3_crv.balanceOf(user)
+    fee_distributor.claim(user, {"from": user})
+    after_balance = yvault_ib3_crv.balanceOf(user)
+    if day >= 6:
+        assert after_balance > initial_balance
+    else:
+        assert after_balance == initial_balance
 
 
 def test_claiming_ib3crv(alice, MintableTestToken, web3, chain, bob):
