@@ -1,7 +1,7 @@
 # @version 0.2.15
 """
-@title Uniswap Burner
-@notice Swap coins to USDC using Uniswap or Sushi, and send to receiver
+@title TraderJoe Burner
+@notice Swap coins to USDC using TraderJoe, and send to receiver
 """
 
 from vyper.interfaces import ERC20
@@ -49,18 +49,20 @@ future_owner: public(address)
 future_emergency_owner: public(address)
 
 
-WETH: constant(address) = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2
-USDC: constant(address) = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48
-ROUTERS: constant(address[2]) = [
-    0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D,  # uniswap
-    0xd9e1cE17f2641f24aE83637ab66a2cca9C378B9F,  # sushi
+WAVAX: constant(address) = 0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7
+
+# USDC.e
+USDC: constant(address) = 0xA7D7079b0FEaD91F3e65f86E8915Cb59c1a4C664
+ROUTERS: constant(address[1]) = [
+    # traderjoe
+    0x60aE616a2155Ee3d9A68541Ba4544862310933d4,
 ]
 
 
 @internal
 def _swap_for_usdc(_coin: address, amount: uint256, router: address):
     # vyper doesnt support dynamic array. build calldata manually
-    if _coin == WETH:
+    if _coin == WAVAX:
         raw_call(
             router,
             concat(
@@ -87,7 +89,7 @@ def _swap_for_usdc(_coin: address, amount: uint256, router: address):
                 convert(block.timestamp, bytes32),  # swap deadline
                 convert(3, bytes32),  # path length
                 convert(_coin, bytes32),  # input token
-                convert(WETH, bytes32),  # weth (intermediate swap)
+                convert(WAVAX, bytes32),  # wavax (intermediate swap)
                 convert(USDC, bytes32),  # usdc (final output)
             ),
         )
@@ -97,7 +99,7 @@ def _swap_for_usdc(_coin: address, amount: uint256, router: address):
 def _get_amounts_out(_coin: address, amount: uint256, router: address) -> uint256:
     # vyper doesnt support dynamic array. build calldata manually
     call_data: Bytes[256] = 0x00
-    if _coin == WETH:
+    if _coin == WAVAX:
         call_data = concat(
             method_id("getAmountsOut(uint256,address[])"),
             convert(amount, bytes32),
@@ -113,12 +115,12 @@ def _get_amounts_out(_coin: address, amount: uint256, router: address) -> uint25
             convert(64, bytes32),
             convert(3, bytes32),
             convert(_coin, bytes32),
-            convert(WETH, bytes32),
+            convert(WAVAX, bytes32),
             convert(USDC, bytes32),
         )
     response: Bytes[128] = raw_call(router, call_data, max_outsize=128)
     response_bytes_start_index: uint256 = 0
-    if _coin == WETH:
+    if _coin == WAVAX:
         response_bytes_start_index = 64
     else:
         response_bytes_start_index = 96
@@ -148,7 +150,7 @@ def __init__(_receiver: address, _recovery: address, _owner: address, _emergency
 @nonreentrant("lock")
 def burn(_coin: address) -> bool:
     """
-    @notice Receive `_coin` and swap it for USDC using Uniswap or Sushi
+    @notice Receive `_coin` and swap it for USDC using TraderJoe
     @param _coin Address of the coin being converted
     @return bool success
     """
@@ -177,19 +179,19 @@ def burn(_coin: address) -> bool:
     best_expected: uint256 = 0
     router: address = ZERO_ADDRESS
 
-    # check the rates on uniswap and sushi to see which is the better option
+    # check the rates on traderjoe to see which is the better option
     for addr in ROUTERS:
-        if _coin != WETH:
+        if _coin != WAVAX:
             factory: address = UniswapV2Router02(addr).factory()
-            coin_weth_pair: address = UniswapV2Factory(factory).getPair(_coin, WETH)
-            if coin_weth_pair == ZERO_ADDRESS:
+            coin_wavax_pair: address = UniswapV2Factory(factory).getPair(_coin, WAVAX)
+            if coin_wavax_pair == ZERO_ADDRESS:
                 continue
         expected: uint256 = self._get_amounts_out(_coin, amount, addr)
         if expected > best_expected:
             best_expected = expected
             router = addr
 
-    assert router != ZERO_ADDRESS, "neither Uniswap nor Sushiswap has liquidity pool for this token"
+    assert router != ZERO_ADDRESS, "TraderJoe has liquidity pool for this token"
     # make sure the router is approved to transfer the coin
     if not self.is_approved[router][_coin]:
         response: Bytes[32] = raw_call(
