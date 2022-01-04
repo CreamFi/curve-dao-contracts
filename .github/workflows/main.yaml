@@ -41,3 +41,6 @@ jobs:
 
     - name: Run Tests
       run: brownie test tests/fork --network=mainnet-fork
+
+    - name: Run Avalanche Tests
+      run: brownie test tests/avalanche-fork --network=avax-main-fork
